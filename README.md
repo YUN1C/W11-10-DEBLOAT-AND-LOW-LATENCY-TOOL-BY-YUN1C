@@ -4,3 +4,5 @@ NO VIRUS
 All is safe and proofed. You can put the .bat file into any AI and it will only tell you that it's just a harmless debloating script which only uninstall useless Windows Apps and Bloat.
 --------
 Write me on Tiktok personal if u experienced any issues.
+
+<img width="973" height="503" alt="image" src="https://github.com/user-attachments/assets/b037a824-4b85-4453-98cc-bc31d9184cd4" />
