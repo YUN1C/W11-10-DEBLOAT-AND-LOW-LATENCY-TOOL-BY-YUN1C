@@ -1,0 +1,361 @@
+@echo off
+chcp 65001 >nul
+setlocal enabledelayedexpansion
+title Windows 11 Competitive Gaming Debloat, Latency & Deep Clean Suite BY YUN1C
+
+:: ============================================================
+:: Administrative Privilege Check
+:: ============================================================
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo.
+    echo ============================================================
+    echo ERROR: THIS SCRIPT MUST BE RUN AS AN ADMINISTRATOR!
+    echo Please right-click the file and select "Run as administrator".
+    echo ============================================================
+    echo.
+    pause
+    exit /b 1
+)
+
+cls
+echo ============================================================
+echo   WINDOWS 11 COMPETITIVE GAMING DEBLOAT & LATENCY OPTIMIZER
+echo ============================================================
+echo.
+echo [RECOMMENDED NOTES & WARNING]
+echo It is strongly recommended to restart your PC after running this tool
+echo to ensure all registry modifications, BCD timer tweaks, system 
+echo service adjustments, and file cleanups take full effect.
+echo.
+echo ============================================================
+echo.
+echo Select an option for System Restore Point creation:
+echo.
+echo [1] CREATE System Restore Point (Recommended)
+echo [2] Proceed WITHOUT Restore Point
+echo.
+set /p restore_choice="Selection (1 or 2): "
+
+if "%restore_choice%"=="1" (
+    echo.
+    echo Creating System Restore Point...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Enable-ComputerRestore -Drive 'C:' -ErrorAction SilentlyContinue; Checkpoint-Computer -Description 'Pre-Debloat-Latency-Optimization' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop; Write-Host 'Restore point created successfully.' } catch { Write-Host 'Restore point creation skipped or failed.' }"
+) else (
+    echo.
+    echo Proceeding without creating a Restore Point...
+)
+
+echo.
+echo Press any key to start the optimization process...
+pause >nul
+
+:: ============================================================
+:: 1. MICROSOFT EDGE SELECTION
+:: ============================================================
+cls
+echo ============================================================
+echo MICROSOFT EDGE OPTIONS
+echo ============================================================
+echo [1] Completely REMOVE / UNINSTALL Microsoft Edge
+echo [2] KEEP Microsoft Edge, but DEBLOAT (Disable background processes & telemetry)
+echo.
+set /p edge_choice="Selection (1 or 2): "
+
+:: ============================================================
+:: 2. WIDGETS, AI (COPILOT), ONEDRIVE, APPS & EDGE SELECTION
+:: ============================================================
+cls
+echo [1/17] Removing Windows AI (Copilot), Widgets, OneDrive & Bloatware Apps...
+
+:: AI / Recall / Copilot Disable & Remove
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows AI" /v "DisableAIDataAnalysis" /t REG_DWORD /d 1 /f >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -AllUsers *Copilot* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
+
+:: Uninstall Widgets completely
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -AllUsers *WebExperience* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t REG_DWORD /d 0 /f >nul 2>&1
+
+:: Uninstall OneDrive
+taskkill /f /im OneDrive.exe >nul 2>&1
+if exist "%SystemRoot%\System32\OneDriveSetup.exe" "%SystemRoot%\System32\OneDriveSetup.exe" /uninstall >nul 2>&1
+if exist "%SystemRoot%\SysWOW64\OneDriveSetup.exe" "%SystemRoot%\SysWOW64\OneDriveSetup.exe" /uninstall >nul 2>&1
+
+:: Remove unnecessary pre-installed Windows Apps
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -AllUsers | Where-Object {$_.Name -match 'BingNews|BingWeather|GetHelp|Getstarted|MicrosoftOfficeHub|SolitaireCollection|People|PowerAutomate|SkypeApp|Todos|FeedbackHub|Maps|SoundRecorder|YourPhone|Zune'} | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
+
+:: Process Microsoft Edge Choice
+if "%edge_choice%"=="1" (
+    echo Removing Microsoft Edge...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -AllUsers *MicrosoftEdge* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
+    reg add "HKLM\SOFTWARE\Microsoft\OptionPack" /v "URL" /t REG_DWORD /d 0 /f >nul 2>&1
+) else (
+    echo Debloating Microsoft Edge...
+    reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "HubsSidebarEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "BackgroundModeEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "MetricsReportingEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "ShowRecommendationsEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
+)
+
+:: ============================================================
+:: 3. SYSMAIN (SUPERFETCH) & HIBERNATION
+:: ============================================================
+echo [2/17] Disabling SysMain & Hibernation...
+sc config SysMain start= disabled >nul 2>&1
+net stop SysMain >nul 2>&1
+powercfg /hibernate off >nul 2>&1
+
+:: ============================================================
+:: 4. TELEMETRY & CONSUMER FEATURES
+:: ============================================================
+echo [3/17] Disabling Telemetry & Windows Consumer Features...
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v "AllowTelemetry" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v "DisableWindowsConsumerFeatures" /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v "DisableSoftLanding" /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d 0 /f >nul 2>&1
+sc config DiagTrack start= disabled >nul 2>&1
+sc config dmwappushservice start= disabled >nul 2>&1
+net stop DiagTrack >nul 2>&1
+net stop dmwappushservice >nul 2>&1
+
+:: ============================================================
+:: 5. DELIVERY OPTIMIZATION
+:: ============================================================
+echo [4/17] Disabling Delivery Optimization...
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v "DODownloadMode" /t REG_DWORD /d 0 /f >nul 2>&1
+sc config dosvc start= disabled >nul 2>&1
+net stop dosvc >nul 2>&1
+
+:: ============================================================
+:: 6. LOCATION TRACKING
+:: ============================================================
+echo [5/17] Disabling Location Tracking...
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors" /v "DisableLocation" /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location" /v "Value" /t REG_SZ /d "Deny" /f >nul 2>&1
+sc config lfsvc start= disabled >nul 2>&1
+
+:: ============================================================
+:: 7. SEARCH INDEX, ADS, SEARCH RECOMMENDATIONS & HISTORY
+:: ============================================================
+echo [6/17] Disabling Search Indexing, Bing Search & Start Menu Ads...
+sc config WSearch start= disabled >nul 2>&1
+net stop WSearch >nul 2>&1
+
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "CortanaConsent" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "HistoryViewEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Policies\Microsoft\Windows\Explorer" /v "DisableSearchBoxSuggestions" /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "DisableWebSearch" /t REG_DWORD /d 1 /f >nul 2>&1
+
+:: ============================================================
+:: 8. DISABLE WPBT (BIOS AUTO-INSTALLER)
+:: ============================================================
+echo [7/17] Disabling WPBT (Bios-Software-Auto-Installation)...
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager" /v "DisableWPBT" /t REG_DWORD /d 1 /f >nul 2>&1
+
+:: ============================================================
+:: 9. DISABLE BACKGROUND APPS
+:: ============================================================
+echo [8/17] Disabling Background Apps Completely...
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "GlobalUserDisabled" /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsRunInBackground" /t REG_DWORD /d 2 /f >nul 2>&1
+
+:: ============================================================
+:: 10. BROWSER DEBLOAT
+:: ============================================================
+echo [9/17] Disabling Background Services for Major Web Browsers...
+:: Chrome
+reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "BackgroundModeEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "MetricsReportingEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
+sc config gupdate start= disabled >nul 2>&1
+sc config gupdatem start= disabled >nul 2>&1
+
+:: Brave
+reg add "HKLM\SOFTWARE\Policies\BraveSoftware\Brave" /v "BackgroundModeEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
+sc config BraveUpdateUserWorkMachineUA start= disabled >nul 2>&1
+
+:: Firefox
+reg add "HKLM\SOFTWARE\Policies\Mozilla\Firefox" /v "DisableTelemetry" /t REG_DWORD /d 1 /f >nul 2>&1
+sc config MozillaMaintenance start= disabled >nul 2>&1
+
+:: Opera
+sc config OperaScheduledAutoupdate start= disabled >nul 2>&1
+
+:: ============================================================
+:: 11. DISABLE RESERVED STORAGE
+:: ============================================================
+echo [10/17] Disabling Reserved Storage Space...
+DISM.exe /Online /Set-ReservedStorageState /State:Disabled >nul 2>&1
+
+:: ============================================================
+:: 12. PERIPHERAL SOFTWARE AUTO-INSTALLATION & DRIVER UPDATES BLOCK
+:: ============================================================
+echo [11/17] Blocking Driver & Peripheral Auto-Downloads via Windows Update...
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Settings" /v "DisablePreinstalledApps" /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v "ExcludeWUDriversInQualityUpdate" /t REG_DWORD /d 1 /f >nul 2>&1
+
+:: ============================================================
+:: 13. STORAGE SENSE & NOTIFICATIONS
+:: ============================================================
+echo [12/17] Disabling Storage Sense & Windows Notifications...
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" /v "01" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\PushNotifications" /v "ToastEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-338389Enabled" /t REG_DWORD /d 0 /f >nul 2>&1
+
+:: ============================================================
+:: 14. BCD TIMERS, CPU SCHEDULING, NETWORK & MOUSE LOW-LATENCY TWEAKS
+:: ============================================================
+echo [13/17] Applying BCD Timers, CPU Scheduling, Network & Raw Input Tweaks...
+
+:: BCD Timer Settings
+bcdedit /set useplatformclock false >nul 2>&1
+bcdedit /set disabledynamictick yes >nul 2>&1
+bcdedit /set useplatformtick yes >nul 2>&1
+
+:: CPU Scheduling & Win32PrioritySeparation (0x26 / 38 Dec for gaming priority)
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 38 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "NetworkThrottlingIndex" /t REG_DWORD /d 4294967295 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "SystemResponsiveness" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "GPU Priority" /t REG_DWORD /d 8 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Priority" /t REG_DWORD /d 6 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Scheduling Category" /t REG_SZ /d "High" /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "SFIO Priority" /t REG_SZ /d "High" /f >nul 2>&1
+
+:: TCP/IP Nagle's Algorithm Latency Tweaks
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$adapters = Get-CimInstance Win32_NetworkAdapterConfiguration | Where-Object {$_.IPEnabled -eq $true}; foreach ($a in $adapters) { Set-ItemProperty -Path ('HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\' + $a.SettingID) -Name 'TcpAckFrequency' -Value 1 -Type DWord -ErrorAction SilentlyContinue; Set-ItemProperty -Path ('HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\' + $a.SettingID) -Name 'TCPNoDelay' -Value 1 -Type DWord -ErrorAction SilentlyContinue; Set-ItemProperty -Path ('HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\' + $a.SettingID) -Name 'TcpDelAckTicks' -Value 0 -Type DWord -ErrorAction SilentlyContinue }" >nul 2>&1
+
+:: Raw Input Mouse Acceleration & Keyboard Response Latency
+reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "0" /f >nul 2>&1
+reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "0" /f >nul 2>&1
+reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "0" /f >nul 2>&1
+reg add "HKCU\Control Panel\Keyboard" /v "KeyboardDelay" /t REG_SZ /d "0" /f >nul 2>&1
+reg add "HKCU\Control Panel\Keyboard" /v "KeyboardSpeed" /t REG_SZ /d "31" /f >nul 2>&1
+
+:: Ultimate Performance Power Plan
+powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 >nul 2>&1
+set "ULTIMATE_GUID="
+for /f "tokens=4" %%i in ('powercfg -list ^| findstr /i "Ultimate Performance"') do set "ULTIMATE_GUID=%%i"
+if defined ULTIMATE_GUID (
+    powercfg -setactive !ULTIMATE_GUID! >nul 2>&1
+)
+
+:: Non-Essential Services Set to Demand (Manual)
+for %%s in (
+    "AxInstSV"
+    "CertPropSvc"
+    "MapsBroker"
+    "AppVClient"
+    "NetTcpPortSharing"
+    "RemoteRegistry"
+    "Routing"
+    "TabletInputService"
+    "WSearch"
+    "XblAuthManager"
+    "XblGameSave"
+    "XboxNetApiSvc"
+) do (
+    sc config %%s start= demand >nul 2>&1
+)
+
+:: ============================================================
+:: 15. ISLC INSTALLATION & 0.5MS TIMER CONFIGURATION
+:: ============================================================
+echo [14/17] Downloading and Configuring ISLC (Intelligent Standby List Cleaner)...
+set "ISLC_DIR=C:\ISLC"
+if not exist "%ISLC_DIR%" mkdir "%ISLC_DIR%"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -Uri 'https://www.wagnardsoft.com/ISLC/ISLC%20v1.0.4.8.exe' -OutFile '%ISLC_DIR%\ISLC_setup.exe' } catch { Invoke-WebRequest -Uri 'https://www.wagnardsoft.com/site/updatecheck?id=islc' -OutFile '%ISLC_DIR%\ISLC_setup.exe' }" >nul 2>&1
+
+if exist "%ISLC_DIR%\ISLC_setup.exe" (
+    "%ISLC_DIR%\ISLC_setup.exe" /s /x /b"%ISLC_DIR%" >nul 2>&1
+    reg add "HKCU\Software\Wagnardsoft\ISLC" /v "WantedTimerResolution" /t REG_SZ /d "0.5000" /f >nul 2>&1
+    reg add "HKCU\Software\Wagnardsoft\ISLC" /v "EnableCustomTimerResolution" /t REG_DWORD /d 1 /f >nul 2>&1
+    reg add "HKCU\Software\Wagnardsoft\ISLC" /v "UseGlobalTimerResolutionRequests" /t REG_DWORD /d 1 /f >nul 2>&1
+    reg add "HKCU\Software\Wagnardsoft\ISLC" /v "StartMinimized" /t REG_DWORD /d 1 /f >nul 2>&1
+    reg add "HKCU\Software\Wagnardsoft\ISLC" /v "MinimizeToSysTray" /t REG_DWORD /d 1 /f >nul 2>&1
+    reg add "HKCU\Software\Wagnardsoft\ISLC" /v "StartOnLogin" /t REG_DWORD /d 1 /f >nul 2>&1
+    reg add "HKCU\Software\Wagnardsoft\ISLC" /v "PollInterval" /t REG_DWORD /d 1000 /f >nul 2>&1
+    reg add "HKCU\Software\Wagnardsoft\ISLC" /v "FreeMemorySize" /t REG_DWORD /d 0 /f >nul 2>&1
+    reg add "HKCU\Software\Wagnardsoft\ISLC" /v "StandbyListSize" /t REG_DWORD /d 99999999 /f >nul 2>&1
+    schtasks /create /tn "ISLC_AutoStart" /tr "\"%ISLC_DIR%\Intelligent standby list cleaner ISLC.exe\"" /sc onlogon /rl highest /f >nul 2>&1
+    echo ISLC successfully installed to C:\ISLC and set to 0.5ms Timer Resolution!
+) else (
+    echo ISLC download requires an active internet connection. Place ISLC in C:\ISLC manually if offline.
+)
+
+:: ============================================================
+:: 16. DISK DIRTY QUERY & AUTOMATIC FILE REPAIR
+:: ============================================================
+echo [15/17] Checking C: Drive State (fsutil dirty query) & Running Repairs...
+
+fsutil dirty query C: | findstr /i "dirty" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [WARNING] C: Drive is marked DIRTY! Scheduling Chkdsk on next reboot...
+    echo y | chkdsk C: /f /r >nul 2>&1
+) else (
+    echo [OK] Drive C: status is clean.
+)
+
+echo Running system integrity scan and repair (SFC & DISM)...
+sfc /scannow
+dism /online /cleanup-image /restorehealth
+
+:: ============================================================
+:: 17. COMPREHENSIVE DEEP CLEANUP (TEMP, CACHES, PREFETCH, WINSXS)
+:: ============================================================
+echo [16/17] Performing Deep Cleanup (Temp, Shader Caches, Prefetch, WinSxS)...
+
+:: Temporary files cleanup
+del /f /s /q "%TEMP%\*" >nul 2>&1
+for /d %%p in ("%TEMP%\*") do rmdir /s /q "%%p" >nul 2>&1
+del /f /s /q "%SystemRoot%\Temp\*" >nul 2>&1
+for /d %%p in ("%SystemRoot%\Temp\*") do rmdir /s /q "%%p" >nul 2>&1
+
+:: Prefetch Cleanup
+del /f /s /q "%SystemRoot%\Prefetch\*" >nul 2>&1
+
+:: Windows & GPU DirectX Shader Caches (NVIDIA, AMD, Intel, Windows DXCache)
+del /f /s /q "%LocalAppData%\D3DSCache\*" >nul 2>&1
+del /f /s /q "%LocalAppData%\NVIDIA\DXCache\*" >nul 2>&1
+del /f /s /q "%LocalAppData%\NVIDIA\GLCache\*" >nul 2>&1
+del /f /s /q "%AppData%\NVIDIA\ComputeCache\*" >nul 2>&1
+del /f /s /q "%LocalAppData%\AMD\DxCache\*" >nul 2>&1
+del /f /s /q "%LocalAppData%\AMD\VkCache\*" >nul 2>&1
+del /f /s /q "%LocalAppData%\Intel\ShaderCache\*" >nul 2>&1
+
+:: Explorer & Delivery Optimization Caches
+del /f /s /q "%LocalAppData%\Microsoft\Windows\Explorer\thumbcache_*.db" >nul 2>&1
+del /f /s /q "%SystemRoot%\SoftwareDistribution\Download\*" >nul 2>&1
+
+:: Component Store / WinSxS Cleanup
+echo Cleaning up WinSxS Component Store...
+dism /online /cleanup-image /startcomponentcleanup /resetbase >nul 2>&1
+
+:: Flush DNS Cache
+ipconfig /flushdns >nul 2>&1
+
+:: ============================================================
+:: COMPLETION & FINAL INSTRUCTIONS
+:: ============================================================
+echo [17/17] Optimization Suite Execution Complete!
+echo.
+echo ============================================================
+echo               OPTIMIZATION COMPLETED SUCCESSFULLY
+echo ============================================================
+echo.
+echo All actions finished:
+echo - Windows debloated & telemetry turned off
+echo - Driver auto-updates blocked (Security updates preserved)
+echo - Latency, Timers (0.5ms ISLC), & Process priorities applied
+echo - Drive check completed (fsutil query) and SFC/DISM repairs executed
+echo - Deep system cleanup finished (Temp, Prefetch, Shader Cache, WinSxS)
+echo.
+echo IMPORTANT RECOMMENDATION:
+echo Please restart your computer NOW for all changes to take effect!
+echo ============================================================
+echo.
+echo Press any key to exit.
+pause >nul
+exit /b 0
